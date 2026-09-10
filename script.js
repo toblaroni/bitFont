@@ -15,6 +15,7 @@ function createGlyphGrid() {
     glyphEl.style.gridTemplateColumns = `repeat(${colNum}, 1fr)`;
     glyphEl.style.gridTemplateRows = `repeat(${rowNum}, 1fr)`;
 
+    const oldGrid = glyphGrid;
     glyphGrid = [];
 
     for (let row = 0; row < rowNum; row++) {
@@ -27,11 +28,23 @@ function createGlyphGrid() {
             div.dataset.col = col;
             div.dataset.row = row;
 
+            const value = oldGrid?.[row]?.[col] ?? 0;
+
+            glyphGrid[row][col] = value;
+
+            if (value)
+                div.classList.add("active-pixel");
+        
             glyphEl.appendChild(div);
-            glyphGrid[row][col] = 0;
         }
     }
 }
+
+[colEl, rowEl].forEach((el) => {
+    el.addEventListener("change", () => {
+        createGlyphGrid();
+    });
+});
 
 function setPixel(pixel, turnOn) {
     const col = Number(pixel.dataset.col);
