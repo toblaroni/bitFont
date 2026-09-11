@@ -90,3 +90,20 @@ document.addEventListener("pointerup", () => {
 });
 
 createGlyphGrid();
+
+// Character selector
+const asciiCharsEl = document.getElementById("ascii-chars-container");
+
+function createAsciiChars() {
+    for (let i = 33; i <= 126; i++) {
+        const char = document.createElement("div");
+
+        char.classList.add("ascii-char");
+        char.textContent = String.fromCharCode(i);
+        char.dataset.ascii = i;
+
+        asciiCharsEl.appendChild(char);
+    }
+}
+
+createAsciiChars();
