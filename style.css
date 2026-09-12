@@ -35,7 +35,9 @@ html, body, main {
 }
 
 .ascii-char {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 10px;
     border: 1px solid black;
 }
@@ -61,4 +63,6 @@ html, body, main {
     background-color: black;
 }
 
-
+.selected-glyph {
+    border: 3px solid black;
+}
