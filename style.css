@@ -40,6 +40,7 @@ html, body, main {
     align-items: center;
     padding: 10px;
     border: 1px solid black;
+    cursor: pointer;
 }
 
 .ascii-char:hover {

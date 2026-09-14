@@ -7,8 +7,57 @@ let glyphGrid = [];
 let drawing = false;
 let erasing = false;
 
+// Character selector
+const asciiCharsEl = document.getElementById("ascii-chars-container");
 
-(function createGlyphGrid() {
+let glyphs = {};
+
+function createNewGlyph() {
+    return Array.from(
+        { length: Number(rowEl.value) },
+        () => Array(Number(colEl.value)).fill(0)
+    );
+}
+
+(function createAsciiChars() {
+    for (let i = 33; i <= 126; i++) {
+        const char = document.createElement("div");
+
+        const character = String.fromCharCode(i);
+        char.classList.add("ascii-char");
+        char.textContent = character;
+        char.dataset.ascii = i;
+
+        asciiCharsEl.appendChild(char);
+        glyphs[i] = createNewGlyph();
+    }
+})();
+
+function createGlyphsObj() {
+    for (let i = 33; i <= 126; i++) {
+        glyphs[i] = createNewGlyph();
+    }
+}
+
+// Highlight the default glyph ("!"")
+let currentGlyph = 33;
+
+let glyphDiv = document.querySelector(`[data-ascii='${currentGlyph}']`);
+glyphDiv.classList.add("selected-glyph");
+
+// Char selection
+asciiCharsEl.addEventListener("click", (event) => {
+    if (!event.target.classList.contains("ascii-char"))
+        return;
+
+    currentGlyph = Number(event.target.dataset.ascii);
+    glyphDiv.classList.remove("selected-glyph");
+    glyphDiv = event.target;
+    glyphDiv.classList.add("selected-glyph")
+    loadCurrentGlyph();
+});
+
+function createGlyphGrid() {
     let colNum = Number(colEl.value);
     let rowNum = Number(rowEl.value);
 
@@ -40,8 +89,29 @@ let erasing = false;
             glyphEl.appendChild(div);
         }
     }
-})();
+};
 
+function loadCurrentGlyph() {
+    let colNum = Number(colEl.value);
+    let rowNum = Number(rowEl.value);
+    for (let row = 0; row < rowNum; row++) {
+        for (let col = 0; col < colNum; col++) {
+            const cell = document.querySelector(
+                `[data-col='${col}'][data-row='${row}']`
+            );
+
+            if (glyphs[currentGlyph][row][col]) {
+                cell.classList.add("active-pixel");
+            } else {
+                cell.classList.remove("active-pixel");
+            }
+        }
+    }
+}
+
+createGlyphGrid();
+
+// TODO - create a warning that if changed it may ruin current glyph data...
 [colEl, rowEl].forEach((el) => {
     el.addEventListener("change", () => {
         createGlyphGrid();
@@ -49,8 +119,7 @@ let erasing = false;
 });
 
 clearBtn.addEventListener("click", () => {
-    glyphGrid = [];
-    createGlyphGrid();
+    
 });
 
 function setPixel(pixel, turnOn) {
@@ -58,6 +127,7 @@ function setPixel(pixel, turnOn) {
     const row = Number(pixel.dataset.row);
     
     glyphGrid[row][col] = turnOn ? 1 : 0;
+    glyphs[currentGlyph][row][col] = turnOn ? 1 : 0;
     if (turnOn) {
         pixel.classList.add("active-pixel");
     } else {
@@ -87,36 +157,3 @@ glyphEl.addEventListener("pointerover", (event) => {
 document.addEventListener("pointerup", () => {
     drawing = false;
 });
-
-// Character selector
-const asciiCharsEl = document.getElementById("ascii-chars-container");
-
-let glyphs = {};
-
-function createNewGlyph() {
-    return Array.from(
-        { length: Number(rowEl.value) },
-        () => Array(Number(colEl.value)).fill(0)
-    );
-}
-
-(function createAsciiChars() {
-    for (let i = 33; i <= 126; i++) {
-        const char = document.createElement("div");
-
-        const character = String.fromCharCode(i);
-        char.classList.add("ascii-char");
-        char.textContent = character;
-        char.dataset.ascii = i;
-
-        asciiCharsEl.appendChild(char);
-        glyphs[i] = createNewGlyph();
-    }
-})();
-
-let currentGlyph = 33;
-
-// Highlight the current glyph 
-let glyphDiv = document.querySelector(`[data-ascii='${currentGlyph}']`);
-glyphDiv.classList.add("selected-glyph");
-
