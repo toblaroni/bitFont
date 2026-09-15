@@ -3,7 +3,6 @@ const rowEl = document.getElementById("rows");
 const glyphEl = document.getElementById("glyph-container");
 const clearBtn = document.getElementById("clear");
 
-let glyphGrid = [];
 let drawing = false;
 let erasing = false;
 
@@ -66,12 +65,7 @@ function createGlyphGrid() {
     glyphEl.style.gridTemplateColumns = `repeat(${colNum}, 1fr)`;
     glyphEl.style.gridTemplateRows = `repeat(${rowNum}, 1fr)`;
 
-    const oldGrid = glyphGrid;
-    glyphGrid = [];
-
     for (let row = 0; row < rowNum; row++) {
-        glyphGrid[row] = [];
-
         for (let col = 0; col < colNum; col++) {
             const div = document.createElement("div");
 
@@ -79,9 +73,7 @@ function createGlyphGrid() {
             div.dataset.col = col;
             div.dataset.row = row;
 
-            const value = oldGrid?.[row]?.[col] ?? 0;
-
-            glyphGrid[row][col] = value;
+            const value = glyphs[currentGlyph][row][col];
 
             if (value)
                 div.classList.add("active-pixel");
@@ -111,22 +103,75 @@ function loadCurrentGlyph() {
 
 createGlyphGrid();
 
-// TODO - create a warning that if changed it may ruin current glyph data...
+function resizeGlyphs() {
+    const cols = Number(colEl.value);
+    const rows = Number(rowEl.value);
+
+    for (const character in glyphs) {
+        const oldGlyph = glyphs[character];
+        let newGlyph = [];
+
+        for (let row = 0; row < rows; row++) {
+            newGlyph[row] = [];
+
+            for (let col = 0; col < cols; col++) {
+                // If row doesn't exist make it zero
+                newGlyph[row][col] = oldGlyph[row]?.[col] ?? 0;
+            }
+        }
+        glyphs[character] = newGlyph;
+    }
+}
+
+let currentRows = Number(rowEl.value);
+let currentCols = Number(colEl.value);
+
 [colEl, rowEl].forEach((el) => {
     el.addEventListener("change", () => {
+        const newRows = Number(rowEl.value);
+        const newCols = Number(colEl.value);
+
+        // Only warn if the grid is getting smaller
+        if (newRows < currentRows || newCols < currentCols) {
+            const confirmed = confirm(
+                "Reducing the grid size may delete existing pixels. Continue?"
+            );
+
+            if (!confirmed) {
+                // Restore the previous value
+                if (el === rowEl) {
+                    rowEl.value = currentRows;
+                } else {
+                    colEl.value = currentCols;
+                }
+
+                return;
+            }
+        }
+
+        resizeGlyphs();
+
+        currentRows = newRows;
+        currentCols = newCols;
+
         createGlyphGrid();
     });
 });
 
+
 clearBtn.addEventListener("click", () => {
-    
+    // Clear the current glyph
+    for (let row = 0; row < currentRows; row++) {
+        glyphs[currentGlyph][row].fill(0);
+    }
+
+    loadCurrentGlyph();
 });
 
 function setPixel(pixel, turnOn) {
     const col = Number(pixel.dataset.col);
     const row = Number(pixel.dataset.row);
     
-    glyphGrid[row][col] = turnOn ? 1 : 0;
     glyphs[currentGlyph][row][col] = turnOn ? 1 : 0;
     if (turnOn) {
         pixel.classList.add("active-pixel");
