@@ -50,13 +50,13 @@ html, body, main {
 #glyph-container {
     width: 400px;
     height: 600px;
-    border: 1px solid black;
+    border: 0.5px solid black;
     display: grid;
     touch-action: none;
 }
 
 .glyph-pixel {
-    border: 1px solid black;
+    border: 0.1px solid black;
     user-select: none;
 }
 

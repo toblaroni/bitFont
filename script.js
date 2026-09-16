@@ -10,6 +10,8 @@ let erasing = false;
 const asciiCharsEl = document.getElementById("ascii-chars-container");
 
 let glyphs = {};
+let currentRows = Number(rowEl.value);
+let currentCols = Number(colEl.value);
 
 function createNewGlyph() {
     return Array.from(
@@ -32,10 +34,37 @@ function createNewGlyph() {
     }
 })();
 
+loadProject();
+
 function createGlyphsObj() {
     for (let i = 33; i <= 126; i++) {
         glyphs[i] = createNewGlyph();
     }
+}
+
+// Store projects in local storage.
+function saveProject() {
+    const project = {
+        rows: currentRows,
+        cols: currentCols,
+        glyphs: glyphs
+    };
+
+    localStorage.setItem("bitfont-project", JSON.stringify(project));
+}
+
+function loadProject() {
+    const saved = localStorage.getItem("bitfont-project");
+
+    if (!saved) {
+        return;
+    }
+
+    const project = JSON.parse(saved);
+
+    currentRows = project.rows;
+    currentCols = project.cols;
+    glyphs = project.glyphs;
 }
 
 // Highlight the default glyph ("!"")
@@ -123,8 +152,6 @@ function resizeGlyphs() {
     }
 }
 
-let currentRows = Number(rowEl.value);
-let currentCols = Number(colEl.value);
 
 [colEl, rowEl].forEach((el) => {
     el.addEventListener("change", () => {
@@ -155,6 +182,7 @@ let currentCols = Number(colEl.value);
         currentCols = newCols;
 
         createGlyphGrid();
+        saveProject();
     });
 });
 
@@ -166,6 +194,7 @@ clearBtn.addEventListener("click", () => {
     }
 
     loadCurrentGlyph();
+    saveProject();
 });
 
 function setPixel(pixel, turnOn) {
@@ -178,6 +207,8 @@ function setPixel(pixel, turnOn) {
     } else {
         pixel.classList.remove("active-pixel");
     }
+
+    saveProject();
 }
 
 glyphEl.addEventListener("pointerdown", (event) => {
@@ -201,4 +232,99 @@ glyphEl.addEventListener("pointerover", (event) => {
 
 document.addEventListener("pointerup", () => {
     drawing = false;
+});
+
+
+// === Exporting ===
+function glyphToBytes(glyph) {
+    const bytes = [];
+    const bytesPerColumn = Math.ceil(currentRows / 8);
+
+    for (let col = 0; col < currentCols; col++) {
+        for (let byteIndex = 0; byteIndex < bytesPerColumn; byteIndex++) {
+            let byte = 0;
+
+            for (let bit = 0; bit < 8; bit++) {
+                const row = byteIndex * 8 + bit;
+
+                if (row < currentRows && glyph[row][col]) {
+                    byte |= 1 << bit;
+                }
+            }
+
+            bytes.push(byte);
+        }
+    }
+
+    return bytes;
+}
+
+function generateCFile() {
+    let output = `#include "bitfont.h"\n\n`;
+
+    output += `const uint8_t font[] = {\n`;
+
+    for (let i = 32; i <= 126; i++) {   // Include whitespace
+
+        const glyph = glyphs[i] ??
+            Array.from(
+                { length: currentRows },
+                () => Array(currentCols).fill(0)
+            );
+
+        const bytes = glyphToBytes(glyph);
+
+        const character = String.fromCharCode(i);
+        const displayChar = 
+            character === "\\" ?  "BACKSLASH" : 
+            character === " " ? "SPACE" : character;
+
+        output += `    // ${displayChar}\n`;
+        output += `    ${bytes.map(byte => `0x${byte.toString(16).padStart(2, "0")}`).join(", ")},\n`;
+    }
+
+    output += `};\n`;
+
+    return output;
+}
+
+function generateHeaderFile() {
+    return `#ifndef BITFONT_H
+#define BITFONT_H
+
+#include <stdint.h>
+
+#define FONT_FIRST_CHAR 32
+#define FONT_LAST_CHAR 126
+#define FONT_CHAR_WIDTH ${currentCols}
+#define FONT_CHAR_HEIGHT ${currentRows}
+
+extern const uint8_t font[];
+
+#endif
+`;
+}
+
+function downloadFile(filename, content) {
+    const blob = new Blob([content], {
+        type: "text/plain"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById("export").addEventListener("click", () => {
+    const cFile = generateCFile();
+    const hFile = generateHeaderFile();
+
+    downloadFile("bitfont.c", cFile);
+    downloadFile("bitfont.h", hFile);
 });
