@@ -1,69 +1,223 @@
 * {
+    box-sizing: border-box;
     padding: 0;
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
-html, body, main {
-    width: 100vw;
-    height: 100vh;
+:root {
+    --bg: #f4e8cf;
+    --paper: #fff8e8;
+    --ink: #241b16;
+    --accent: #e4572e;
+    --accent-dark: #b83b1e;
+    --yellow: #f2c94c;
+    --muted: #d8c7a8;
 }
+
+html,
+body,
+main {
+    width: 100%;
+    min-height: 100vh;
+}
+
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Courier New", Courier, monospace;
+    font-weight: 700;
+}
+
+main {
+    padding: 28px;
+}
+
+/* --- Controls --- */
 
 #settings-container {
-    padding: 20px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 18px 22px;
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 30px;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
 }
 
+#settings-container label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+#settings-container input[type="text"],
+#settings-container input[type="number"] {
+    height: 42px;
+    padding: 6px 10px;
+
+    background: #fffdf5;
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    outline: none;
+
+    font: inherit;
+    font-size: 1rem;
+}
+
+#settings-container input[type="text"] {
+    width: 150px;
+}
+
+#settings-container input[type="number"] {
+    width: 76px;
+}
+
+#settings-container input:focus {
+    border-color: var(--accent);
+    box-shadow: 3px 3px 0 var(--accent);
+}
+
+button {
+    min-height: 42px;
+    padding: 7px 16px;
+
+    background: var(--accent);
+    color: #fff8e8;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+
+    font: inherit;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--yellow);
+    color: var(--ink);
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--ink);
+}
+
+button:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+
+/* --- Editor --- */
+
 #editor-container {
-    margin-top: 50px;
+    margin: 55px auto 0;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     gap: 50px;
 }
 
+/* Character selector */
 
 #ascii-chars-container {
-    padding-bottom: 50px;
     width: 500px;
+    padding: 14px;
+
     display: grid;
     grid-template-columns: repeat(auto-fill, 50px);
-    font-size: 2em;
     justify-content: center;
+    align-content: start;
+    gap: 7px;
+
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
+
+    font-size: 2em;
 }
 
 .ascii-char {
+    min-height: 50px;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px;
-    border: 1px solid black;
+
+    background: var(--muted);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+
     cursor: pointer;
+    user-select: none;
+
+    transition: transform 70ms ease, background-color 70ms ease;
 }
 
 .ascii-char:hover {
-    background-color: aliceblue;
+    background-color: var(--yellow);
+    transform: translate(-2px, -2px);
 }
+
+.selected-glyph {
+    background-color: var(--accent);
+    color: #fff8e8;
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Glyph editor */
 
 #glyph-container {
     width: 400px;
     height: 600px;
-    border: 0.5px solid black;
+
     display: grid;
+
+    background: var(--paper);
+    border: 5px solid var(--ink);
+    box-shadow: 10px 10px 0 var(--ink);
+
     touch-action: none;
 }
 
 .glyph-pixel {
-    border: 0.1px solid black;
+    border: 1px solid var(--ink);
+    background: #fffdf5;
     user-select: none;
 }
 
-.active-pixel {
-    background-color: black;
+.glyph-pixel:hover {
+    background: var(--yellow);
 }
 
-.selected-glyph {
-    border: 3px solid black;
+.active-pixel {
+    background-color: var(--accent);
+}
+
+/* Keep the pixel grid crisp and chunky on small screens. */
+
+@media (max-width: 900px) {
+    main {
+        padding: 18px;
+    }
+
+    #editor-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 35px;
+    }
+
+    #ascii-chars-container {
+        width: min(500px, 100%);
+    }
+
+    #glyph-container {
+        width: min(400px, 100%);
+    }
+
+    #settings-container {
+        width: 100%;
+    }
 }

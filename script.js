@@ -36,12 +36,6 @@ function createNewGlyph() {
 
 loadProject();
 
-function createGlyphsObj() {
-    for (let i = 33; i <= 126; i++) {
-        glyphs[i] = createNewGlyph();
-    }
-}
-
 // Store projects in local storage.
 function saveProject() {
     const project = {
@@ -289,6 +283,8 @@ function generateCFile() {
 }
 
 function generateHeaderFile() {
+    const bytesPerColumn = Math.ceil(currentRows / 8);
+
     return `#ifndef BITFONT_H
 #define BITFONT_H
 
@@ -298,6 +294,7 @@ function generateHeaderFile() {
 #define FONT_LAST_CHAR 126
 #define FONT_CHAR_WIDTH ${currentCols}
 #define FONT_CHAR_HEIGHT ${currentRows}
+#define FONT_BYTES_PER_COLUMN ${bytesPerColumn}
 
 extern const uint8_t font[];
 
@@ -322,9 +319,25 @@ function downloadFile(filename, content) {
 }
 
 document.getElementById("export").addEventListener("click", () => {
+    const fontName = document.getElementById("font-name").value;
+
+
+    var disallowedChars = /[<>:"\/\\|?*\x00-\x1F]/;
+    // Check if the filename contains any disallowed characters
+    if (disallowedChars.test(fontName)) {
+        alert("Fontname contains illegal characters.")
+        return;
+    } else if (fontName.trim() === '') {
+        alert("Font name cannot be empty.")
+        return;
+    } if (fontName.length > 255) {
+        alert("Font name exceeds the maximum length (255).")
+        return;
+    }
+
     const cFile = generateCFile();
     const hFile = generateHeaderFile();
 
-    downloadFile("bitfont.c", cFile);
-    downloadFile("bitfont.h", hFile);
+    downloadFile(`${fontName}.c`, cFile);
+    downloadFile(`${fontName}.h`, hFile);
 });
