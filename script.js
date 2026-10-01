@@ -39,6 +39,7 @@ loadProject();
 // Store projects in local storage.
 function saveProject() {
     const project = {
+        fontName: document.getElementById("font-name").value,
         rows: currentRows,
         cols: currentCols,
         glyphs: glyphs
@@ -59,6 +60,7 @@ function loadProject() {
     currentRows = project.rows;
     currentCols = project.cols;
     glyphs = project.glyphs;
+    document.getElementById("font-name").value = project.fontName;
 }
 
 // Highlight the default glyph ("!"")
@@ -253,10 +255,10 @@ function glyphToBytes(glyph) {
     return bytes;
 }
 
-function generateCFile() {
-    let output = `#include "bitfont.h"\n\n`;
+function generateCFile(fontName) {
+    let output = `#include "${fontName}.h"\n\n`;
 
-    output += `const uint8_t font[] = {\n`;
+    output += `const uint8_t ${fontName}_data[] = {\n`;
 
     for (let i = 32; i <= 126; i++) {   // Include whitespace
 
@@ -282,19 +284,21 @@ function generateCFile() {
     return output;
 }
 
-function generateHeaderFile() {
+function generateHeaderFile(fontName) {
     const bytesPerColumn = Math.ceil(currentRows / 8);
 
-    return `#ifndef BITFONT_H
-#define BITFONT_H
+    const fontNameUp = fontName.toUpperCase();
+
+    return `#ifndef ${fontNameUp}_H
+#define ${fontNameUp}_H
 
 #include <stdint.h>
 
-#define FONT_FIRST_CHAR 32
-#define FONT_LAST_CHAR 126
-#define FONT_CHAR_WIDTH ${currentCols}
-#define FONT_CHAR_HEIGHT ${currentRows}
-#define FONT_BYTES_PER_COLUMN ${bytesPerColumn}
+#define ${fontNameUp}_FIRST_CHAR 32
+#define ${fontNameUp}_LAST_CHAR 126
+#define ${fontNameUp}_CHAR_WIDTH ${currentCols}
+#define ${fontNameUp}_CHAR_HEIGHT ${currentRows}
+#define ${fontNameUp}_BYTES_PER_COLUMN ${bytesPerColumn}
 
 extern const uint8_t font[];
 
@@ -319,8 +323,7 @@ function downloadFile(filename, content) {
 }
 
 document.getElementById("export").addEventListener("click", () => {
-    const fontName = document.getElementById("font-name").value;
-
+    let fontName = document.getElementById("font-name").value;
 
     var disallowedChars = /[<>:"\/\\|?*\x00-\x1F]/;
     // Check if the filename contains any disallowed characters
@@ -335,8 +338,10 @@ document.getElementById("export").addEventListener("click", () => {
         return;
     }
 
-    const cFile = generateCFile();
-    const hFile = generateHeaderFile();
+    fontName = fontName.replace('-', "_");
+
+    const cFile = generateCFile(fontName);
+    const hFile = generateHeaderFile(fontName);
 
     downloadFile(`${fontName}.c`, cFile);
     downloadFile(`${fontName}.h`, hFile);
