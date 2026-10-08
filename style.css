@@ -106,9 +106,78 @@ button:hover {
 }
 
 button:active {
-    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0 var(--ink);
+    transform: translate(2px, 2px);
+}
+
+#glyph-container.hide-metrics .metric-guide {
+    display: none;
+}
+
+/* --- Show Metrics toggle --- */
+
+#settings-container .toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+#settings-container .toggle input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    display: grid;
+    place-content: center;
+
+    width: 28px;
+    height: 28px;
+    padding: 0;
+
+    background: #fffdf5;
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    cursor: pointer;
+}
+
+/* Checkmark */
+#settings-container .toggle input[type="checkbox"]::after {
+    content: "";
+    width: 14px;
+    height: 14px;
+    background: #fff8e8;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transform: scale(0);
+    transition: transform 70ms ease;
+}
+
+#settings-container .toggle input[type="checkbox"]:checked {
+    background: var(--accent);
+}
+
+#settings-container .toggle input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+#settings-container .toggle:hover input[type="checkbox"] {
+    background: var(--yellow);
+}
+
+#settings-container .toggle:hover input[type="checkbox"]:checked {
+    background: var(--accent-dark);
+}
+
+#settings-container .toggle:active input[type="checkbox"] {
+    transform: translate(3px, 3px);
     box-shadow: none;
 }
+
+#settings-container .toggle input[type="checkbox"]:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
 
 /* --- Editor --- */
 
@@ -170,6 +239,7 @@ button:active {
 /* Glyph editor */
 
 #glyph-container {
+    position: relative;
     width: 400px;
     height: 600px;
 
@@ -195,6 +265,82 @@ button:active {
 .active-pixel {
     background-color: var(--accent);
 }
+.metric-guide {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 12px;
+    transform: translateY(-50%);
+    z-index: 20;
+
+    cursor: ns-resize;
+    pointer-events: auto;
+}
+
+.metric-guide::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+
+    border-top: 2px dashed;
+}
+
+.metric-guide::after {
+    content: attr(data-label);
+
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    padding: 1px 4px;
+    background: var(--paper);
+
+    font-size: 10px;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+/* Different guide types */
+
+.ascender-guide {
+    border-color: var(--accent);
+}
+
+.ascender-guide::before {
+    border-color: var(--accent);
+}
+
+.ascender-guide::after {
+    color: var(--accent);
+}
+
+.x-height-guide::before {
+    border-color: var(--yellow);
+}
+
+.x-height-guide::after {
+    color: var(--ink);
+}
+
+.baseline-guide::before {
+    border-color: var(--ink);
+}
+
+.baseline-guide::after {
+    color: var(--ink);
+}
+
+.descender-guide::before {
+    border-color: var(--accent-dark);
+}
+
+.descender-guide::after {
+    color: var(--accent-dark);
+}
+
 
 /* Keep the pixel grid crisp and chunky on small screens. */
 

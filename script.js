@@ -3,6 +3,10 @@ const rowEl = document.getElementById("rows");
 const glyphEl = document.getElementById("glyph-container");
 const clearBtn = document.getElementById("clear");
 
+const fontNameEl = document.getElementById("font-name")
+
+const showMetrics = document.getElementById("show-metrics");
+
 let drawing = false;
 let erasing = false;
 
@@ -13,12 +17,21 @@ let glyphs = {};
 let currentRows = Number(rowEl.value);
 let currentCols = Number(colEl.value);
 
+const guides = [
+    { name: "ascender",  className: "ascender-guide",  row: 1, element: null },
+    { name: "x-height",  className: "x-height-guide",  row: 3, element: null },
+    { name: "baseline",  className: "baseline-guide",  row: 5, element: null },
+    { name: "descender", className: "descender-guide", row: 7, element: null }
+];
+
+
 function createNewGlyph() {
     return Array.from(
         { length: Number(rowEl.value) },
         () => Array(Number(colEl.value)).fill(0)
     );
 }
+
 
 (function createAsciiChars() {
     for (let i = 33; i <= 126; i++) {
@@ -35,14 +48,17 @@ function createNewGlyph() {
 })();
 
 loadProject();
+applyMetricsVisibility();
 
 // Store projects in local storage.
 function saveProject() {
     const project = {
-        fontName: document.getElementById("font-name").value,
+        fontName: fontNameEl.value,
         rows: currentRows,
         cols: currentCols,
-        glyphs: glyphs
+        glyphs: glyphs,
+        guides: guides.map(guide => guide.row),
+        showMetrics: showMetrics.checked
     };
 
     localStorage.setItem("bitfont-project", JSON.stringify(project));
@@ -60,7 +76,20 @@ function loadProject() {
     currentRows = project.rows;
     currentCols = project.cols;
     glyphs = project.glyphs;
-    document.getElementById("font-name").value = project.fontName;
+    fontNameEl.value = project.fontName;
+
+    rowEl.value = project.rows;
+    colEl.value = project.cols;
+
+    showMetrics.checked = project.showMetrics !== false;
+
+    if (Array.isArray(project.guides)) {
+        guides.forEach((guide, i) => {
+            if (Number.isInteger(project.guides[i])) {
+                guide.row = Math.max(0, project.guides[i])
+            }
+        })
+    }
 }
 
 // Highlight the default glyph ("!"")
@@ -106,7 +135,20 @@ function createGlyphGrid() {
             glyphEl.appendChild(div);
         }
     }
+    attachGuides();
 };
+
+// Save whenever it loses focues
+fontNameEl.addEventListener("blur", () => saveProject());
+
+function applyMetricsVisibility() {
+    glyphEl.classList.toggle("hide-metrics", !showMetrics.checked);
+}
+
+showMetrics.addEventListener("change", () => {
+    applyMetricsVisibility();
+    saveProject();
+});
 
 function loadCurrentGlyph() {
     let colNum = Number(colEl.value);
@@ -231,6 +273,108 @@ document.addEventListener("pointerup", () => {
 });
 
 
+// === Metric guides ===
+// Each guide keeps its own DOM element so it survives grid rebuilds.
+// `row` is a boundary index: 0 = top edge of the grid, `rows` = bottom edge.
+
+// Y position (relative to the glyph container's padding box) of every row boundary
+function makeDraggable(element, guide) {
+    let dragging = false;
+
+    element.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        element.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+
+    element.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+
+        const boundaries = getRowBoundaries();
+        if (boundaries.length === 0) return;
+
+        const originY = glyphEl.getBoundingClientRect().top + glyphEl.clientTop;
+        const y = event.clientY - originY;
+
+        // Snap to the closest row boundary
+        let closest = 0;
+        for (let i = 1; i < boundaries.length; i++) {
+            if (Math.abs(y - boundaries[i]) < Math.abs(y - boundaries[closest])) {
+                closest = i;
+            }
+        }
+
+        element.style.top = `${boundaries[closest]}px`;
+        guide.row = closest;
+    });
+
+    element.addEventListener("pointerup", (event) => {
+        dragging = false;
+        element.releasePointerCapture(event.pointerId);
+        saveProject();
+    });
+}
+
+function getRowBoundaries() {
+    const pixels = glyphEl.querySelectorAll(".glyph-pixel");
+    const rows = Number(rowEl.value);
+    const cols = Number(colEl.value);
+
+    if (pixels.length < rows * cols) return [];
+
+    // clientTop = top border width, so this matches what `top: ...px` is relative to
+    const originY = glyphEl.getBoundingClientRect().top + glyphEl.clientTop;
+
+    const boundaries = [];
+
+    for (let row = 0; row < rows; row++) {
+        const rect = pixels[row * cols].getBoundingClientRect();
+        boundaries.push(rect.top - originY);
+    }
+
+    // Bottom edge of the last row
+    const lastRect = pixels[(rows - 1) * cols].getBoundingClientRect();
+    boundaries.push(lastRect.bottom - originY);
+
+    return boundaries;
+}
+
+function createGuideElement(guide) {
+    const element = document.createElement("div");
+
+    element.className = `metric-guide ${guide.className}`;
+    element.dataset.label = guide.name;
+
+    makeDraggable(element, guide);   // listeners are attached once and persist
+    guide.element = element;
+}
+
+// Re-attach guides after the grid is rebuilt, clamp them to the new size,
+// and move them to their stored row.
+function attachGuides() {
+    const rows = Number(rowEl.value);
+
+    guides.forEach(guide => {
+        if (!guide.element) createGuideElement(guide);
+
+        glyphEl.appendChild(guide.element);
+        guide.row = Math.min(guide.row, rows);
+    });
+
+    // Positioning needs the guides' parent laid out, so do it after appending.
+    positionGuides();
+}
+
+function positionGuides() {
+    const boundaries = getRowBoundaries();
+    if (boundaries.length === 0) return;
+
+    guides.forEach(guide => {
+        guide.element.style.top = `${boundaries[guide.row]}px`;
+    });
+}
+
+
 // === Exporting ===
 function glyphToBytes(glyph) {
     const bytes = [];
@@ -346,3 +490,4 @@ document.getElementById("export").addEventListener("click", () => {
     downloadFile(`${fontName}.c`, cFile);
     downloadFile(`${fontName}.h`, hFile);
 });
+
